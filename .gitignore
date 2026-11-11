@@ -1,0 +1,29 @@
+# STM32 / CMake build outputs
+
+build/
+
+cmake-build-*/
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.su
+
+# IDE & Editor configurations
+
+.vscode/
+.settings/
+*.uvguix.*
+*.uvoptx
+*.uvprojx
+JLinkLog.txt
+
+# os generated files
+
+.DS_Store
+Thumbs.db
+
+# Windows executables (from PC test)
+*.exe
