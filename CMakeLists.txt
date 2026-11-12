@@ -79,4 +79,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Common/Logger.cpp 
     Common/UartTask.cpp 
+    Common/AppInit.cpp
 )

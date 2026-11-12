@@ -1,3 +1,4 @@
+#include "main.h"
 #include "UartTask.hpp"
 #include <cstring>
 #include "Logger.hpp"
@@ -52,6 +53,7 @@ void UartTask::Run() {
             Logger::Info("UartTask", "Received data from UART!");
         } else {
             // Timeout handling (do nothing)
+            HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
         }
     }
 }

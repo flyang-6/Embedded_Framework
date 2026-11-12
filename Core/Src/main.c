@@ -6,6 +6,8 @@
   ******************************************************************************
   * @attention
   *
+  * 
+  * 
   * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
@@ -15,6 +17,7 @@
   *
   ******************************************************************************
   */
+ extern void App_Init(void);
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -91,7 +94,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  App_Init();
   /* USER CODE END 2 */
 
   /* Init scheduler */
