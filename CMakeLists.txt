@@ -37,7 +37,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add Common folder to include path
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Common)
-
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3)
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
 
@@ -72,4 +74,9 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
 
     # Add user defined libraries
+)
+
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+    Common/Logger.cpp 
+    Common/UartTask.cpp 
 )
