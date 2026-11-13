@@ -51,6 +51,8 @@ void UartTask::Run() {
         if (xQueueReceive(rx_queue_, &msg, pdMS_TO_TICKS(100)) == pdTRUE) {
             //
             Logger::Info("UartTask", "Received data from UART!");
+            HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+            vTaskDelay(pdMS_TO_TICKS(500));
         } else {
             // Timeout handling (do nothing)
             HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);

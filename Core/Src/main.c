@@ -17,7 +17,7 @@
   *
   ******************************************************************************
   */
- extern void App_Init(void);
+ //extern void App_Init(void);
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -28,6 +28,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+extern void App_Init(void);
 extern void User_Uart_RX_Callback(uint8_t* data, uint16_t len);
 /* USER CODE END Includes */
 
@@ -49,7 +50,7 @@ extern void User_Uart_RX_Callback(uint8_t* data, uint16_t len);
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+uint8_t g_rx_buffer[64];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -96,6 +97,9 @@ int main(void)
   MX_DMA_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+ // static uint8_t g_rx_buffer[64];
+  HAL_UART_Receive_DMA(&huart1, g_rx_buffer, sizeof(g_rx_buffer));
+  
   App_Init();
   /* USER CODE END 2 */
 
@@ -156,14 +160,16 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+extern uint8_t g_rx_buffer[64];
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart->Instance == USART1) {
       //
-      uint8_t temp_buffer[64]= {0};
-
-      //
-      User_Uart_RX_Callback(temp_buffer, sizeof(temp_buffer));
+     // uint8_t temp_buffer[64]= {0};
+        User_Uart_RX_Callback(g_rx_buffer, sizeof(g_rx_buffer));
+        HAL_UART_Receive_DMA(&huart1, g_rx_buffer, sizeof(g_rx_buffer));
+        //
+      //User_Uart_RX_Callback(temp_buffer, sizeof(temp_buffer));
     }
 }
 /* USER CODE END 4 */

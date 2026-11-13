@@ -8,7 +8,7 @@ static UartTask* g_uart_task = nullptr;
 
 extern "C" void App_Init(void) {
     // Instantiate hardware UART
-    static Stm32Uart uart1(nullptr);
+    static Stm32Uart uart1(&huart1);
     // Instantiate task with the interface
     static UartTask uart_task(&uart1);
 
