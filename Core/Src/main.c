@@ -163,10 +163,12 @@ void SystemClock_Config(void)
 extern uint8_t g_rx_buffer[64];
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-    if (huart->Instance == USART1) {
+      if (huart->Instance == USART1) {
       //
+      //HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
      // uint8_t temp_buffer[64]= {0};
-        User_Uart_RX_Callback(g_rx_buffer, sizeof(g_rx_buffer));
+       // User_Uart_RX_Callback(g_rx_buffer, sizeof(g_rx_buffer));
+       HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
         HAL_UART_Receive_DMA(&huart1, g_rx_buffer, sizeof(g_rx_buffer));
         //
       //User_Uart_RX_Callback(temp_buffer, sizeof(temp_buffer));

@@ -48,14 +48,18 @@ void UartTask::Run() {
     UartMessage msg;
     while (true) {
         //
-        if (xQueueReceive(rx_queue_, &msg, pdMS_TO_TICKS(100)) == pdTRUE) {
+        if (xQueueReceive(rx_queue_, &msg, pdMS_TO_TICKS(1000)) == pdTRUE) {
             //
-            Logger::Info("UartTask", "Received data from UART!");
-            HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-            vTaskDelay(pdMS_TO_TICKS(500));
+          //  Logger::Info("UartTask", "Received data from UART!");
+            //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+
+            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
         } else {
             // Timeout handling (do nothing)
-            HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+            vTaskDelay(pdMS_TO_TICKS(1000));
         }
     }
 }
