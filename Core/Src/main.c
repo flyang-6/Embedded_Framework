@@ -23,6 +23,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "dma.h"
+#include "i2c.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -96,11 +97,12 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_USART1_UART_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
  // static uint8_t g_rx_buffer[64];
-  HAL_UART_Receive_DMA(&huart1, g_rx_buffer, sizeof(g_rx_buffer));
+ // HAL_UART_Receive_DMA(&huart1, g_rx_buffer, sizeof(g_rx_buffer));
   
-  App_Init();
+ // App_Init();
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -161,14 +163,20 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 extern uint8_t g_rx_buffer[64];
+//extern void User_Uart_RX_Callback(uint8_t* data, uint16_t len);
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
       if (huart->Instance == USART1) {
       //
       //HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
      // uint8_t temp_buffer[64]= {0};
-       // User_Uart_RX_Callback(g_rx_buffer, sizeof(g_rx_buffer));
-       HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+        User_Uart_RX_Callback(g_rx_buffer, sizeof(g_rx_buffer));
+      // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+     //  HAL_Delay(2000);
+      // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+
+  //     User_Uart_RX_Callback(g_rx_buffer, 64);
+       //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
         HAL_UART_Receive_DMA(&huart1, g_rx_buffer, sizeof(g_rx_buffer));
         //
       //User_Uart_RX_Callback(temp_buffer, sizeof(temp_buffer));

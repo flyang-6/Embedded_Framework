@@ -84,4 +84,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Common/Logger.cpp 
     Common/UartTask.cpp 
     Common/AppInit.cpp
+    Common/Stm32Uart.cpp
+    Common/Stm32Can.cpp
+    Common/Stm32I2c.cpp
 )

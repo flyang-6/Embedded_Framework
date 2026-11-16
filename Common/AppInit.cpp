@@ -16,10 +16,11 @@ extern "C" void App_Init(void) {
     g_uart_task = &uart_task;
 
     // Init the UART handware
-    if (uart1.Init(115200) == ErrorCode::OK) {
+ //   if (uart1.Init(115200) == ErrorCode::OK) {
         // Start the FreeRTOS task
+        uart1.Init(115200);
         uart_task.Start();
-    }
+  //  }
 }
 
 // c interface exposed for the c language ISR

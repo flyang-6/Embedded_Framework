@@ -25,7 +25,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+extern void App_Init(void);
+extern uint8_t g_rx_buffer[64];
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -115,9 +116,12 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
   /* Infinite loop */
+  HAL_UART_Receive_DMA(&huart1, g_rx_buffer, 64);
+  App_Init();
+
   for(;;)
   {
-    osDelay(1);
+    osDelay(1000);
   }
   /* USER CODE END StartDefaultTask */
 }

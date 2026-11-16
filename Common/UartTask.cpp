@@ -52,13 +52,15 @@ void UartTask::Run() {
             //
           //  Logger::Info("UartTask", "Received data from UART!");
             //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-
+            if (uart_port_ != nullptr) {
+                uart_port_->Transmit(msg.data, msg.length);
+            }
             HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+            vTaskDelay(pdMS_TO_TICKS(500));
+            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
         } else {
             // Timeout handling (do nothing)
-            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+            HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
             vTaskDelay(pdMS_TO_TICKS(1000));
         }
     }
