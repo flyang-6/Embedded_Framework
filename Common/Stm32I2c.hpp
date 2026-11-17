@@ -1,6 +1,6 @@
 #pragma once
 #include "II2c.hpp"
-#INCLUDE "i2c.h"
+#include "i2c.h"
 
 class Stm32I2c : public II2c {
 private:
