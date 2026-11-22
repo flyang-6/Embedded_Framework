@@ -5,23 +5,35 @@
 
 ```text
 My_framework/
-├── Common/                 # 核心抽象层（接口与通用工具）
+├── Common/                 # Module 层：接口与通用组件（零 HAL 依赖）
 │   ├── ErrorCode.hpp       # 统一错误码（全局通用）
-│   ├── Logger.hpp/.cpp     # 统一日志打印（支持带错误码打印）
+│   ├── Logger.hpp/.cpp     # 统一日志打印（走 IUart 接口，不依赖 printf）
 │   ├── IUart.hpp           # 串口硬件纯虚接口（"合同"）
 │   ├── II2c.hpp            # I2C硬件纯虚接口
 │   ├── ICan.hpp            # CAN硬件纯虚接口
-│   ├── Stm32Uart.hpp/.cpp  # 串口具体实现（对接HAL库）
-│   ├── UartTask.hpp/.cpp   # 串口业务任务（对接FreeRTOS）
-│   └── AppInit.cpp         # 给C语言暴露的初始化入口与C++混编桥接
+│   └── ITimer.hpp          # 周期定时器纯虚接口
+├── Bsp/                    # BSP 层：唯一允许包含 HAL 头文件的地方
+│   ├── Stm32Uart.hpp/.cpp  # 串口实现（阻塞发送 + DMA/空闲中断接收）
+│   ├── Stm32I2c.hpp/.cpp   # I2C实现（阻塞 + 中断两种方式）
+│   ├── Stm32Can.hpp/.cpp   # CAN实现（阻塞发送 + FIFO0 中断接收）
+│   ├── Stm32Timer.hpp/.cpp # 定时器实现（周期中断）
+│   └── BoardLed.hpp/.cpp   # 板载 LED，替代业务层直接写 GPIO
+├── App/                    # Application 层：只依赖接口
+│   ├── AppInit.cpp         # 组合根：装配所有对象、统一初始化
+│   ├── UartEchoTask.*      # 串口回显任务（队列）
+│   ├── CanEchoTask.*       # CAN 回显任务（队列）
+│   └── HeartbeatTask.*     # 心跳任务（二值信号量）
 ├── Core/                   # STM32CubeMX生成的底层代码（HAL, main.c等）
 ├── Drivers/                # STM32官方HAL库驱动文件
 ├── Middlewares/            # FreeRTOS操作系统源码
 └── CMakeLists.txt          # 构建脚本
+```
+
+> 2026-11-22 的分层改造细节见 `docs/Step2_Layering_Refactor.md`。
 
 +-------------------------------------------------------------+
 |                     Application 层 (业务层)                 |
-|  负责具体业务逻辑与 FreeRTOS 任务调度 (如：UartTask)        |
+|  负责具体业务逻辑与 FreeRTOS 任务调度 (如：UartEchoTask)        |
 +-------------------------------------------------------------+
                               |
                               v (依赖注入 & 接口调用)

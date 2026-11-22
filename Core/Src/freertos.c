@@ -25,8 +25,7 @@
 #include "usart.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-extern void App_Init(void);
-extern uint8_t g_rx_buffer[64];
+extern int App_Init(void);
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -115,14 +114,9 @@ void MX_FREERTOS_Init(void) {
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
-  /* Infinite loop */
-  HAL_UART_Receive_DMA(&huart1, g_rx_buffer, 64);
-  App_Init();
-
-  for(;;)
-  {
-    osDelay(1000);
-  }
+  (void)argument;
+  (void)App_Init();      /* 框架初始化；失败原因已在 App_Init 内部打印 */
+  vTaskDelete(NULL);     /* 启动任务用完即删，省下 512 字节栈 */
   /* USER CODE END StartDefaultTask */
 }
 

@@ -207,7 +207,9 @@ void DMA1_Channel5_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
-
+  /* 空闲中断钩子：先判 IDLE（一帧结束），再交给 HAL 处理其它中断源 */
+  extern void Bsp_Uart_IdleIrq(UART_HandleTypeDef * huart);
+  Bsp_Uart_IdleIrq(&huart1);
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */

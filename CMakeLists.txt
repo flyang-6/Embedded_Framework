@@ -1,90 +1,77 @@
 cmake_minimum_required(VERSION 3.22)
 
-#
-# This file is generated only once,
-# and is not re-generated if converter is called multiple times.
-#
-# User is free to modify the file as much as necessary
-#
-
-# Setup compiler settings
+# ---- 语言标准 ----
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Define the build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-# Set the project name
 set(CMAKE_PROJECT_NAME My_framework)
-
-# Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
-# Core project settings
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
-# Enable CMake support for ASM and C languages
 enable_language(C CXX ASM)
 
-# Set C++17 standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Add Common folder to include path
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Common)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3)
-# Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
 
-# Add STM32CubeMX generated sources
+# STM32CubeMX 生成的 Core / Drivers / FreeRTOS
 add_subdirectory(cmake/stm32cubemx)
 
-# Link directories setup
-target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined library search paths
-)
-
-# Add sources to executable
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user sources here
-    Common/AppInit.cpp
-    Common/Logger.cpp
-    Common/Stm32Uart.cpp
-    Common/UartTask.cpp
-)
-
-# Add include paths
+# ---- 三层的头文件路径 ----
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined include paths
+    ${CMAKE_CURRENT_SOURCE_DIR}/Common      # Module 层：接口、错误码、日志
+    ${CMAKE_CURRENT_SOURCE_DIR}/Bsp         # BSP 层：具体芯片驱动
+    ${CMAKE_CURRENT_SOURCE_DIR}/App         # Application 层：任务与业务
 )
 
-# Add project symbols (macros)
-target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined symbols
+# ---- 框架源码 ----
+set(FRAMEWORK_SOURCES
+    Common/Logger.cpp
+    Bsp/Stm32Uart.cpp
+    Bsp/Stm32I2c.cpp
+    Bsp/BoardLed.cpp
+    App/AppInit.cpp
+    App/UartEchoTask.cpp
+    App/CanEchoTask.cpp
+    App/HeartbeatTask.cpp
 )
 
-# Remove wrong libob.a library dependency when using cpp files
+# CAN / TIM 驱动只有在 CubeMX 生成对应头文件后才参与编译，
+# 这样“先跑通串口”和“后加 CAN/TIM”两个阶段都能编过。
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/can.h")
+    list(APPEND FRAMEWORK_SOURCES Bsp/Stm32Can.cpp)
+    message(STATUS "CAN driver enabled (Core/Inc/can.h found)")
+else()
+    message(STATUS "CAN driver disabled (Core/Inc/can.h not found)")
+endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/tim.h")
+    list(APPEND FRAMEWORK_SOURCES Bsp/Stm32Timer.cpp)
+    message(STATUS "TIM driver enabled (Core/Inc/tim.h found)")
+else()
+    message(STATUS "TIM driver disabled (Core/Inc/tim.h not found)")
+endif()
+
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${FRAMEWORK_SOURCES})
+
+# ---- 嵌入式 C++：关掉异常、RTTI、静态变量线程安全护栏，省 flash ----
+target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall)
+target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics>
+)
+
+# 使用 C++ 时去掉错误的 libob.a 依赖
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
-# Add linked libraries
-target_link_libraries(${CMAKE_PROJECT_NAME}
-    stm32cubemx
-
-    # Add user defined libraries
-)
-
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    Common/Logger.cpp 
-    Common/UartTask.cpp 
-    Common/AppInit.cpp
-    Common/Stm32Uart.cpp
- #   Common/Stm32Can.cpp
-    Common/Stm32I2c.cpp
-)
+target_link_libraries(${CMAKE_PROJECT_NAME} stm32cubemx)
