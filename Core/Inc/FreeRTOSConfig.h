@@ -149,6 +149,15 @@ standard names. */
 
 /* USER CODE BEGIN Defines */
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
+
+/* ---------------------------------------------------------------------------
+ * 工程自定义：堆必须 >= 8KB。
+ * idle(512) + 软件定时器(1024) + UartEcho(1536) + CanEcho(1280) +
+ * Heartbeat(1024) + 队列/信号量(~1.5KB) 已超过 CubeMX 默认的 3072 字节，
+ * 不改会出现 xTaskCreate 静默失败。放在 USER CODE 区，重新生成不会被覆盖。
+ * ------------------------------------------------------------------------- */
+#undef  configTOTAL_HEAP_SIZE
+#define configTOTAL_HEAP_SIZE   ((size_t)10240)
 /* USER CODE END Defines */
 
 #endif /* FREERTOS_CONFIG_H */

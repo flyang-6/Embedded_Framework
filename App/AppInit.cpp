@@ -70,7 +70,7 @@ extern "C" int App_Init(void) {
 
 #if defined(APP_HAS_CAN)
     {
-        static Stm32Can can1(&hcan1);
+        static Stm32Can can1(&hcan);   // 注意：CubeMX 6.x 单 CAN 实例名是 hcan（不是 hcan1）
         static CanEchoTask can_task(can1, led);
 
         rc = can1.Init();

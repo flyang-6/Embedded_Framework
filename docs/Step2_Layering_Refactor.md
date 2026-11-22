@@ -154,27 +154,72 @@ Memory region         Used Size  Region Size  %age Used
 
 ---
 
-## 6. 还没做的（下一步）
+## 6. CubeMX 配置与收尾（2026-11-22 晚补充）
 
-| # | 事项 | 说明 |
-|---|---|---|
-| 1 | CubeMX 配 CAN + TIM3 + I2C 中断 | 见下节清单；配完 `cmake -S . -B build` 会自动启用两个驱动 |
-| 2 | CAN 回环模式 | CubeMX 6.18 的 F1 CAN 面板没有 Operating Mode，生成后手动把 `can.c` 里 `hcan1.Init.Mode` 改成 `CAN_MODE_LOOPBACK`（只改这一行，其余别动） |
-| 3 | `docs/Architecture.md` | 目录树已同步更新，层次说明可以再补一版 |
-| 4 | 测试视频 | 串口回显 / 心跳灯 / CAN 回环 / 超时日志 |
-| 5 | git push | 本机领先 origin 若干 commit，记得推 |
+CubeMX 已配好并重新生成：CAN1（PA11/PA12、`USB_LP_CAN1_RX0_IRQn` 优先级 5）、TIM3（内部时钟、优先级 5）、I2C1 事件/错误中断。
 
-### CubeMX 待办清单
+重新生成后踩到三个坑，都已处理：
 
-- `Connectivity → CAN1`：Activated、PA11/PA12、500 kbit/s、NVIC 勾 **CAN RX0 interrupt**（优先级 5）
-- `Timers → TIM3`：Internal Clock、NVIC 勾 **TIM3 global interrupt**（优先级 5）
-- `Connectivity → I2C1`：NVIC 勾 **I2C1 event + error interrupt**（优先级 5）
-- `FreeRTOS → Config parameters`：**TOTAL_HEAP_SIZE = 10240**
-- `GPIO → PA11`：Pull-up（回环自测时防悬空噪声）
+### 6.1 CAN 句柄叫 `hcan`，不是 `hcan1`
+
+CubeMX 6.18 对 F1 的单路 CAN 生成的是：
+
+```c
+CAN_HandleTypeDef hcan;      /* 不是 hcan1 */
+```
+
+`App/AppInit.cpp` 里改成 `static Stm32Can can1(&hcan);`。换 CubeMX 版本后若句柄名变化，编译会直接报 `'hcan1' was not declared`，按提示改成 `can.h` 里 `extern` 的那个名字即可。
+
+### 6.2 堆会被重新生成改回 3072
+
+`configTOTAL_HEAP_SIZE` 在 `FreeRTOSConfig.h` 的生成区，重新生成会还原成 3072。解决办法：把覆盖写进文件末尾的 `USER CODE BEGIN Defines` 区（这一段重新生成不会动）：
+
+```c
+#undef  configTOTAL_HEAP_SIZE
+#define configTOTAL_HEAP_SIZE   ((size_t)10240)
+```
+
+### 6.3 CAN 时序默认值是 166kbit/s
+
+生成出来是 `Prescaler=16 / BS1=1TQ / BS2=1TQ`，8MHz 下约 166kbit/s。已改成标准 500kbit/s：
+
+```c
+hcan.Init.Prescaler  = 1;              /* 8MHz / 1 作为 tq 时钟 */
+hcan.Init.TimeSeg1   = CAN_BS1_13TQ;   /* 采样点 87.5% */
+hcan.Init.TimeSeg2   = CAN_BS2_2TQ;    /* 1+13+2 = 16tq → 500kbit/s */
+```
+
+**注意**：这三行在生成区，下次 GENERATE 会还原。要么以后别再生成，要么在 CubeMX 的 `CAN1 → Parameter Settings` 里把 Prescaler / BS1 / BS2 按上表填好（会存进 `.ioc`，一劳永逸）。
+
+回环模式同理（CubeMX 6.18 的 F1 CAN 面板没有 Operating Mode 选项）：
+
+```c
+hcan.Init.Mode = CAN_MODE_LOOPBACK;    /* 接真实收发器时改回 CAN_MODE_NORMAL */
+```
+
+### 6.4 最新编译结果
+
+```text
+RAM:   16248 B / 20 KB   (79.34%)
+FLASH: 52968 B / 64 KB   (80.82%)
+```
+
+CAN + TIM 的 HAL 驱动进来后 flash 从 36.5KB 涨到 52.9KB，还剩约 11KB。
 
 ---
 
-## 7. 回滚
+## 7. 剩下的活
+
+| # | 事项 | 说明 |
+|---|---|---|
+| 1 | 上板验证 | 串口回显（短帧/长帧）、心跳灯 1s、CAN 回环自发自收 |
+| 2 | 测试视频 | 上面三项 + 错误码日志 |
+| 3 | 移植演示 | 换一块 STM32（串口+定时器），证明只改 `AppInit.cpp` |
+| 4 | git push | 本机领先 origin 若干 commit |
+
+---
+
+## 8. 回滚
 
 ```powershell
 git reset --hard HEAD~1      # 回到改造前
