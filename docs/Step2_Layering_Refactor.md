@@ -197,7 +197,26 @@ hcan.Init.TimeSeg2   = CAN_BS2_2TQ;    /* 1+13+2 = 16tq → 500kbit/s */
 hcan.Init.Mode = CAN_MODE_LOOPBACK;    /* 接真实收发器时改回 CAN_MODE_NORMAL */
 ```
 
-### 6.4 最新编译结果
+### 6.4 上电后所有周期日志都停了：启动任务栈溢出
+
+现象：烧进去只打印 6 行启动日志，之后 `[HB] tick=5` 和串口回显全都没有，看着像死机。
+
+原因：CubeMX 默认任务 `defaultTask` 的栈是 **128 words = 512 字节**，而 `App_Init()` 就跑在这个任务里——
+里面多次调用 `Logger`（内部 `vsnprintf`）并创建 5 个任务和队列，512 字节根本不够。栈溢出把紧挨着的
+FreeRTOS 堆踩坏，`App_Init` 返回后调度器就再也没跑起来。
+
+定位手法：临时给 `Stm32Uart` 加两个计数器（中断进入次数 / 收到字节数），在 1 s 超时分支打印。结果一直是
+`irq=0 rx=0`，连"没数据"的日志都出不来 → 说明不是串口收不到，而是整个系统初始化后停了。
+
+修复：默认任务栈 128 → **512 words（2 KB）**：
+
+- `.ioc`：`FREERTOS.Tasks01=defaultTask,24,512,...`
+- `Core/Src/freertos.c`：`.stack_size = 512 * 4,`
+
+> 教训：凡是"在启动任务里做初始化"的框架，都要先确认启动任务栈够用。CubeMX 界面上那个 128 的单位是
+> **words**（字），换算成字节要 ×4。
+
+### 6.5 最新编译结果
 
 ```text
 RAM:   16248 B / 20 KB   (79.34%)
@@ -228,3 +247,28 @@ git checkout -- .
 ```
 
 改造前的最后一次提交是 `8726477 feat: implement I2C driver ...`。
+
+---
+
+## 9. 实机验证记录（2026-11-22 21:50，COM4 / 115200）
+
+上电输出：
+
+```text
+[INFO ][APP] framework boot
+[INFO ][APP] i2c ready (100000Hz)
+[INFO ][APP] can ready
+[INFO ][APP] timer ready (1000ms)
+[INFO ][APP] framework ready
+[INFO ][HB] heartbeat task started, period=1000ms
+```
+
+| 测试 | 现象 |
+|---|---|
+| 发 5 字节 `HELLO` | 立即原样回显（IDLE 判帧生效，不再等 64 字节） |
+| 发 100 字节 | 分成 64 + 36 两段连续回显，无丢字节 |
+| 连发 12 个 3 字节小帧 | 全部按序回显，并打印 `[INFO ][UART] echoed 10 frames` |
+| 心跳 | PC13 每秒翻转，打印 `[HB] tick=5` / `tick=10` |
+
+结论：UART（阻塞发送 + DMA/IDLE 接收）、FreeRTOS 任务调度、日志、定时器心跳 均已实机跑通；
+CAN 回环待补一帧触发后验证。
