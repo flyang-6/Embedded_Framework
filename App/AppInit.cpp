@@ -71,7 +71,9 @@ extern "C" int App_Init(void) {
 #if defined(APP_HAS_CAN)
     {
         static Stm32Can can1(&hcan);   // 注意：CubeMX 6.x 单 CAN 实例名是 hcan（不是 hcan1）
-        static CanEchoTask can_task(can1, led);
+        // 回环自测：只收不回，任务每 5 s 自发一帧 0x123，验证 发送 + 中断接收 两条路
+        // 接真实收发器、总线上有别的节点时，把最后一个参数改成 true
+        static CanEchoTask can_task(can1, led, false);
 
         rc = can1.Init();
         if (rc != ErrorCode::OK) {

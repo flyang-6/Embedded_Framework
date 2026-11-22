@@ -270,5 +270,18 @@ git checkout -- .
 | 连发 12 个 3 字节小帧 | 全部按序回显，并打印 `[INFO ][UART] echoed 10 frames` |
 | 心跳 | PC13 每秒翻转，打印 `[HB] tick=5` / `tick=10` |
 
-结论：UART（阻塞发送 + DMA/IDLE 接收）、FreeRTOS 任务调度、日志、定时器心跳 均已实机跑通；
-CAN 回环待补一帧触发后验证。
+结论：UART（阻塞发送 + DMA/IDLE 接收）、FreeRTOS 任务调度、日志、定时器心跳 均已实机跑通。
+
+CAN 回环（`CAN_MODE_LOOPBACK`，不需要收发器）也验证通过——`CanEchoTask` 在 `echo_back=false` 时每 5 s 自发一帧，
+发送出去后由 CAN 控制器自己收回 FIFO0，走中断接收路径：
+
+```text
+[INFO ][CAN] can task started, echo_back=0
+[INFO ][CAN] tx self-test id=0x123 seq=0
+[INFO ][CAN] rx id=0x123 dlc=8 ext=0
+[INFO ][CAN] tx self-test id=0x123 seq=1
+[INFO ][CAN] rx id=0x123 dlc=8 ext=0
+```
+
+接真实收发器（TJA1050）并挂到总线上时，把 `AppInit.cpp` 里 `CanEchoTask can_task(can1, led, false)` 的最后一个
+参数改成 `true`，并把 `can.c` 的 `CAN_MODE_LOOPBACK` 改回 `CAN_MODE_NORMAL` 即可。
