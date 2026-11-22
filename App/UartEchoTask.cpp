@@ -1,5 +1,6 @@
 #include "UartEchoTask.hpp"
 #include "Logger.hpp"
+#include "FrameCodec.hpp"
 
 #include <cstring>
 
@@ -60,14 +61,34 @@ void UartEchoTask::Run() {
     for (;;) {
         UartChunk chunk;
         if (xQueueReceive(queue_, &chunk, pdMS_TO_TICKS(1000)) == pdTRUE) {
-            ErrorCode rc = uart_.Transmit(chunk.data, chunk.len, 100U);
+            Frame frame;
+            ErrorCode rc = DecodeFrame(chunk.data, chunk.len, frame);
+            if (rc == ErrorCode::ERR_CHECKSUM_FAIL) {
+                // 数据校验失败：必须明确报错，不能当没收到
+                Logger::Error("UART", rc, "crc mismatch, frame dropped (len=%u)", chunk.len);
+                continue;
+            }
             if (rc != ErrorCode::OK) {
-                Logger::Error("UART", rc, "echo %u bytes failed", chunk.len);
+                Logger::Error("UART", rc, "bad header/length (len=%u)", chunk.len);
+                continue;
+            }
+
+            uint8_t out[80];
+            const uint16_t n = EncodeFrame(frame, out, sizeof(out));
+            if (n == 0U) {
+                Logger::Error("UART", ErrorCode::ERR_INVALID_PARAM,
+                              "encode failed (len=%u)", frame.len);
+                continue;
+            }
+
+            rc = uart_.Transmit(out, n, 100U);
+            if (rc != ErrorCode::OK) {
+                Logger::Error("UART", rc, "reply %u bytes failed", n);
             } else {
                 ++frames_;
                 led_.Toggle();
                 if ((frames_ % 10U) == 0U) {
-                    Logger::Info("UART", "echoed %lu frames",
+                    Logger::Info("UART", "replied %lu frames",
                                  static_cast<unsigned long>(frames_));
                 }
             }
