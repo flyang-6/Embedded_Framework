@@ -31,6 +31,9 @@
 #if defined(APP_HAS_TIM)
 #  include "Stm32Timer.hpp"
 #  include "HeartbeatTask.hpp"
+#  include "Stm32Pwm.hpp"
+#  include "Servo.hpp"
+#  include "ServoTask.hpp"
 #endif
 
 namespace {
@@ -102,6 +105,31 @@ extern "C" int App_Init(void) {
             return static_cast<int>(rc);
         }
         Logger::Info("APP", "timer ready (%lums)", static_cast<unsigned long>(kHeartbeatMs));
+
+        // 两个 SG90：TIM2_CH1(PA0) / TIM2_CH2(PA1)
+        // 注意：TIM2 不经过 CubeMX，由 Bsp/Stm32Pwm 自己完成时钟/GPIO/时基初始化
+        static Stm32Pwm servo_pwm_pan(TIM2, TIM_CHANNEL_1, GPIOA, GPIO_PIN_0);
+        static Stm32Pwm servo_pwm_tilt(TIM2, TIM_CHANNEL_2, GPIOA, GPIO_PIN_1);
+        static Servo servo_pan(servo_pwm_pan);
+        static Servo servo_tilt(servo_pwm_tilt);
+        static ServoTask servo_task(servo_pan, servo_tilt);
+
+        rc = servo_pan.Init();
+        if (rc != ErrorCode::OK) {
+            Logger::Error("APP", rc, "servo pan init failed");
+            return static_cast<int>(rc);
+        }
+        rc = servo_tilt.Init();
+        if (rc != ErrorCode::OK) {
+            Logger::Error("APP", rc, "servo tilt init failed");
+            return static_cast<int>(rc);
+        }
+        rc = servo_task.Start();
+        if (rc != ErrorCode::OK) {
+            Logger::Error("APP", rc, "servo task start failed");
+            return static_cast<int>(rc);
+        }
+        Logger::Info("APP", "servo ready (2x SG90 on TIM2 CH1/CH2)");
     }
 #else
     Logger::Info("APP", "tim not configured in CubeMX, heartbeat disabled");

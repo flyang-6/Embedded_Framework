@@ -36,6 +36,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # ---- 框架源码 ----
 set(FRAMEWORK_SOURCES
     Common/Logger.cpp
+    Common/Servo.cpp
     Bsp/Stm32Uart.cpp
     Bsp/Stm32I2c.cpp
     Bsp/BoardLed.cpp
@@ -43,6 +44,7 @@ set(FRAMEWORK_SOURCES
     App/UartEchoTask.cpp
     App/CanEchoTask.cpp
     App/HeartbeatTask.cpp
+    App/ServoTask.cpp
 )
 
 # CAN / TIM 驱动只有在 CubeMX 生成对应头文件后才参与编译，
@@ -56,6 +58,7 @@ endif()
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/tim.h")
     list(APPEND FRAMEWORK_SOURCES Bsp/Stm32Timer.cpp)
+    list(APPEND FRAMEWORK_SOURCES Bsp/Stm32Pwm.cpp)
     message(STATUS "TIM driver enabled (Core/Inc/tim.h found)")
 else()
     message(STATUS "TIM driver disabled (Core/Inc/tim.h not found)")
